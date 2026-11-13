@@ -8,6 +8,7 @@ from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from data_pipeline import create_cleaning_report, process_data, validate_dataframe
 from src import (
     HealthResponse,
+    MovieCache,
     MovieDataResponse,
     MovieProcessingReport,
     MovieStorage,
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Movie API", version="1.0.0")
 app.middleware("http")(log_requests)
 storage = MovieStorage()
+cache = MovieCache()
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -71,6 +73,7 @@ async def upload_movies(file: UploadFile = File(...)):
 
     # TODO 3: replace the current collection
     storage.save(df)
+    cache.invalidate()  # old cached responses are now out of date
     logger.info(f"Uploaded movies: filename={filename}, rows={len(df)}")
     return {
         "filename": filename,
@@ -83,10 +86,20 @@ async def upload_movies(file: UploadFile = File(...)):
 @app.get("/movies", response_model=MovieDataResponse)
 def get_movies(limit: int = Query(default=100, ge=1)):
     """Return up to limit stored movies and the total count."""
+    # Cache hit: return the saved response and skip SQLite
+    cached = cache.get(limit)
+    if cached is not None:
+        logger.info(f"Retrieved movies from cache: returned_rows={len(cached['data'])}")
+        return cached
+
+    # Cache miss: read from SQLite as in Part 1
     movies = storage.select_columns(MOVIE_COLUMNS, limit)
     total_rows = storage.count_movies()
-    logger.info(f"Retrieved movies: returned_rows={len(movies)}, total_rows={total_rows}")
-    return {"data": movies, "total_rows": total_rows}
+    response = {"data": movies, "total_rows": total_rows}
+
+    cache.set(limit, response)
+    logger.info(f"Retrieved movies: returned_rows={len(movies)}")
+    return response
 
 
 @app.get("/movies/search", response_model=list[dict])
@@ -142,6 +155,7 @@ def process_movies(config: ProcessConfig):
 
     # TODO 3: save only after validation and processing both succeeded
     storage.save(df_after)
+    cache.invalidate()  # old cached responses are now out of date
     logger.info(
         f"Processed movies: validation_removed={validation_rows_removed}, "
         f"rows_before={report['rows_before']}, rows_after={report['rows_after']}"
