@@ -89,7 +89,7 @@ def test_cache_hit_skips_database(client, uploaded_movies, monkeypatch):
     assert second.json() == first.json()
 
 
-# ---------- Optional tests ----------
+# optional tests
 
 def test_upload_replaces_and_clears_cache(client, uploaded_movies, sample_csv_bytes):
     client.get("/movies", params={"limit": 100})

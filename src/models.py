@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-# ---------- Response models ----------
+# response models
 
 class HealthResponse(BaseModel):
     status: str

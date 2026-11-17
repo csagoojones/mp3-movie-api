@@ -18,9 +18,10 @@ class MovieStorage:
     def save(self, df):
         """Replace all movie rows in one transaction."""
         # reindex keeps the four table columns in order; a column dropped during
-        # processing (axis="columns") is filled with missing values.
-        # Missing values (NaN) become Python None, which SQLite stores as NULL.
-        # astype(object) also turns NumPy numbers into plain Python numbers.
+        # processing is filled with missing values.
+        
+        # Missing values become Python None, SQLite stores as NULL.
+        # astype turns NumPy numbers into plain Python numbers.
         clean_df = df.reindex(columns=MOVIE_COLUMNS).astype(object)
         clean_df = clean_df.where(pd.notna(clean_df), None)
         rows = list(clean_df.itertuples(index=False, name=None))
@@ -33,11 +34,11 @@ class MovieStorage:
             VALUES (?, ?, ?, ?)
             """
             connection.executemany(sql_statement, rows)
-            # Commit only after the DELETE and every INSERT succeeded
+            # commit only after the DELETE and every INSERT succeeded
             connection.commit()
             logger.debug(f"Stored movies in SQLite: rows={len(rows)}")
         except sqlite3.Error:
-            # Undo the DELETE too, so the old collection is kept
+            # old collection is kept
             connection.rollback()
             raise
         finally:

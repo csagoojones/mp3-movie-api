@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class MovieCache:
     def __init__(self):
-        # decode_responses=True returns strings instead of bytes
+        # True returns strings instead of bytes
         self.client = fakeredis.FakeRedis(decode_responses=True)
 
     def make_key(self, limit):

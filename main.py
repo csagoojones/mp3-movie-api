@@ -86,7 +86,7 @@ async def upload_movies(file: UploadFile = File(...)):
 @app.get("/movies", response_model=MovieDataResponse)
 def get_movies(limit: int = Query(default=100, ge=1)):
     """Return up to limit stored movies and the total count."""
-    # Cache hit: return the saved response and skip SQLite
+    #return the saved response, skip SQLite
     cached = cache.get(limit)
     if cached is not None:
         logger.info(f"Retrieved movies from cache: returned_rows={len(cached['data'])}")
@@ -155,7 +155,7 @@ def process_movies(config: ProcessConfig):
 
     # TODO 3: save only after validation and processing both succeeded
     storage.save(df_after)
-    cache.invalidate()  # old cached responses are now out of date
+    cache.invalidate()  # old cached responses out of date
     logger.info(
         f"Processed movies: validation_removed={validation_rows_removed}, "
         f"rows_before={report['rows_before']}, rows_after={report['rows_after']}"

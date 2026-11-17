@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 def setup_logging(verbose=False):
     """Configure logging for the pipeline."""
 
-    # DEBUG shows everything (used with --verbose), INFO hides the DEBUG detail.
-    # This is a one-line if/else: level is DEBUG when verbose is True.
+    # DEBUG shows everything, INFO hides  DEBUG detail.
+    # This is a one-line if/else: level is DEBUG when verbose True.
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
         level=level,
